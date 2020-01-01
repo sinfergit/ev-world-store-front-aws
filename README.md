@@ -1,2 +1,1 @@
-# ev-world-store-front-aws
- 
+# ev-world-aws-lambda-app
