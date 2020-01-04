@@ -85,24 +85,18 @@ Resources:
             Tags:
               - Key: Name
                 Value: getUrl-sample
+                
     #Create private route table
     privateRouteTable:
         Type: AWS::EC2::RouteTable
         Properties:
             VpcId: !Ref getUrlVpc
-    
-    #Create public route table 
-    publicRouteTable:
-        Type: AWS::EC2::RouteTable
-        Properties:
-            VpcId: !Ref getUrlVpc
-
+  
     #create dynamodb vpc endpoint 
     DynamoDBEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             RouteTableIds:
-                - !Ref PublicRouteTable
                 - !Ref privateRouteTable
             ServiceName:
                 !Sub "com.amazonaws.${AWS::Region}.dynamodb"
