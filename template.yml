@@ -34,8 +34,15 @@ Resources:
             CodeUri: ./services
             Description: 'Lambda function for car model search'
             MemorySize: 128
+            Policies:
+                - AmazonDynamoDBFullAccess
+                - AWSLambdaVPCAccessExecutionRole
             Timeout: 30
-            Role: arn:aws:iam::386260696605:role/custom-lambda-role
+            VpcConfig:
+                SecurityGroupIds: 
+                    - !GetAtt getUrlSecurityGroup.GroupId
+                SubnetIds:
+                    - !Ref getUrlSubnet
             Events:
                 scanCarModelAPI:
                     Type: Api
@@ -45,6 +52,63 @@ Resources:
             Environment:
                 Variables:
                     REGION: ap-southeast-1
+    #create subnet                 
+    getUrlSubnet:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
+                    - 0
+                    - Fn::GetAZs: ''
+            CidrBlock: 10.0.0.0/20
+            Tags:
+                - Key: Name
+                  Value: getUrl-sample
+            VpcId: !Ref getUrlVpc
+
+    #create security group
+    getUrlSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: Security Group for GetUrl
+            GroupName: getUrl-sample
+            VpcId: !Ref getUrlVpc
+            
+    #create vpc
+    getUrlVpc:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 10.0.0.0/16
+            EnableDnsHostnames: true
+            EnableDnsSupport: true
+            InstanceTenancy: default
+            Tags:
+              - Key: Name
+                Value: getUrl-sample
+    #Create private route table
+    privateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref getUrlVpc
+    
+    #Create public route table 
+    publicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref getUrlVpc
+
+    #create dynamodb vpc endpoint 
+    DynamoDBEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      RouteTableIds:
+        - !Ref PublicRouteTable
+        - !Ref privateRouteTable
+      ServiceName:
+        !Sub "com.amazonaws.${AWS::Region}.dynamodb"
+      VpcId: !Ref getUrlVpc
+
+    ##################################################################################################
     
     #retrieve price lambda function
     PriceRetrievalLambda:
