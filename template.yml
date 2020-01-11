@@ -5,21 +5,47 @@ Transform: AWS::Serverless-2016-10-31
 Description: CD Demo Lambda
 Resources:
 
-    #Role giving permission for the labdas to access resources
-    LambdaExecutionRole:
-        Type: 'AWS::IAM::Role'
+#Role giving permission for the labdas to access resources
+    DynamoDBTable:
+        Type: AWS::DynamoDB::Table
         Properties:
-            AssumeRolePolicyDocument:
-                Version: '2012-10-17'
+            TableName: DynamoDBTable
+            AttributeDefinitions:
+             - 
+                AttributeName: id
+                AttributeType: 'N'
+            KeySchema:
+             - 
+                AttributeName: id
+                KeyType: HASH
+        ProvisionedThroughput:
+            ReadCapacityUnits: 100
+            WriteCapacityUnits: 10 
+
+    LambdaExecutionRole:
+        Description: Creating service role in IAM for AWS Lambda
+        Type: AWS::IAM::Role
+        Properties:
+        AssumeRolePolicyDocument:
+            Statement:
+            - Effect: Allow
+              Principal:
+                Service: [lambda.amazonaws.com]
+              Action: sts:AssumeRole
+        Path: /
+        ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Policies:
+            - PolicyName: LambdaDyanmoDBPolicy
+            PolicyDocument:
+                Version: 2012-10-17
                 Statement:
-                - Effect: Allow
-                  Principal:
-                    Service: [lambda.amazonaws.com]
-                  Action: 'sts:AssumeRole'
-            Path: /
-            ManagedPolicyArns:
-                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-                - arn:aws:iam::aws:policy/service-role/AWSLambdaFullAccess 
+                - Action:
+                    - "dynamodb:*"
+                    Resource: !GetAtt
+                     - DynamoDBTable
+                     - Arn
+                    Effect: Allow
                 
     #search model lambda function
     ModelSearchLambda:
