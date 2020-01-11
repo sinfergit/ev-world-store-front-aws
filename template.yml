@@ -78,7 +78,6 @@ Resources:
           Principal:
             Service: [lambda.amazonaws.com]
           Action: sts:AssumeRole
-        Version: 2012-10-17
       Path: /
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaFullAccess
