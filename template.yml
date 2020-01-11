@@ -3,215 +3,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: CD Demo Lambda
-Mappings:
-  # Hard values for the subnet masks. These masks define
-  # the range of internal IP addresses that can be assigned.
-  # The VPC can have all IP's from 10.0.0.0 to 10.0.255.255
-  # There are four subnets which cover the ranges:
-  #
-  # 10.0.0.0 - 10.0.0.255
-  # 10.0.1.0 - 10.0.1.255
-  # 10.0.2.0 - 10.0.2.255
-  # 10.0.3.0 - 10.0.3.255
-  #
-  # If you need more IP addresses (perhaps you have so many
-  # instances that you run out) then you can customize these
-  # ranges to add more
-  SubnetConfig:
-    VPC:
-      CIDR: '10.0.0.0/16'
-    PublicOne:
-      CIDR: '10.0.0.0/24'
-    PublicTwo:
-      CIDR: '10.0.1.0/24'
-    PrivateOne:
-      CIDR: '10.0.2.0/24'
-    PrivateTwo:
-      CIDR: '10.0.3.0/24'
 Resources:
-
-    VPC:
-        Type: AWS::EC2::VPC
-        Properties:
-            EnableDnsSupport: true
-            EnableDnsHostnames: true
-            CidrBlock: !FindInMap ['SubnetConfig', 'VPC', 'CIDR']
-
-    # Two public subnets, where containers can have public IP addresses
-    PublicSubnetOne:
-        Type: AWS::EC2::Subnet
-        Properties:
-            AvailabilityZone:
-                Fn::Select:
-                - 0
-                - Fn::GetAZs: {Ref: 'AWS::Region'}
-            VpcId: !Ref 'VPC'
-            CidrBlock: !FindInMap ['SubnetConfig', 'PublicOne', 'CIDR']
-            MapPublicIpOnLaunch: true
-
-    PublicSubnetTwo:
-        Type: AWS::EC2::Subnet
-        Properties:
-            AvailabilityZone:
-                Fn::Select:
-                - 1
-                - Fn::GetAZs: {Ref: 'AWS::Region'}
-            VpcId: !Ref 'VPC'
-            CidrBlock: !FindInMap ['SubnetConfig', 'PublicTwo', 'CIDR']
-            MapPublicIpOnLaunch: true
-
-    # Two private subnets where containers will only have private
-    # IP addresses, and will only be reachable by other members of the
-    # VPC
-    PrivateSubnetOne:
-        Type: AWS::EC2::Subnet
-        Properties:
-            AvailabilityZone:
-                Fn::Select:
-                - 0
-                - Fn::GetAZs: {Ref: 'AWS::Region'}
-            VpcId: !Ref 'VPC'
-            CidrBlock: !FindInMap ['SubnetConfig', 'PrivateOne', 'CIDR']
-
-    PrivateSubnetTwo:
-        Type: AWS::EC2::Subnet
-        Properties:
-            AvailabilityZone:
-                Fn::Select:
-                - 1
-                - Fn::GetAZs: {Ref: 'AWS::Region'}
-            VpcId: !Ref 'VPC'
-            CidrBlock: !FindInMap ['SubnetConfig', 'PrivateTwo', 'CIDR']
-
-    # Setup networking resources for the public subnets. Containers
-    # in the public subnets have public IP addresses and the routing table
-    # sends network traffic via the internet gateway.
-    InternetGateway:
-        Type: AWS::EC2::InternetGateway
-    GatewayAttachement:
-        Type: AWS::EC2::VPCGatewayAttachment
-        Properties:
-            VpcId: !Ref 'VPC'
-            InternetGatewayId: !Ref 'InternetGateway'
-    PublicRouteTable:
-        Type: AWS::EC2::RouteTable
-        Properties:
-            VpcId: !Ref 'VPC'
-    PublicRoute:
-        Type: AWS::EC2::Route
-        DependsOn: GatewayAttachement
-        Properties:
-            RouteTableId: !Ref 'PublicRouteTable'
-            DestinationCidrBlock: '0.0.0.0/0'
-            GatewayId: !Ref 'InternetGateway'
-    PublicSubnetOneRouteTableAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            SubnetId: !Ref PublicSubnetOne
-            RouteTableId: !Ref PublicRouteTable
-    PublicSubnetTwoRouteTableAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            SubnetId: !Ref PublicSubnetTwo
-            RouteTableId: !Ref PublicRouteTable
-
-    # Setup networking resources for the private subnets. Containers
-    # in these subnets have only private IP addresses, and must use a NAT
-    # gateway to talk to the internet. We launch two NAT gateways, one for
-    # each private subnet.
-    NatGatewayOneAttachment:
-        Type: AWS::EC2::EIP
-        DependsOn: GatewayAttachement
-        Properties:
-            Domain: vpc
-    NatGatewayTwoAttachment:
-        Type: AWS::EC2::EIP
-        DependsOn: GatewayAttachement
-        Properties:
-            Domain: vpc
-    NatGatewayOne:
-        Type: AWS::EC2::NatGateway
-        Properties:
-            AllocationId: !GetAtt NatGatewayOneAttachment.AllocationId
-            SubnetId: !Ref PublicSubnetOne
-    NatGatewayTwo:
-        Type: AWS::EC2::NatGateway
-        Properties:
-            AllocationId: !GetAtt NatGatewayTwoAttachment.AllocationId
-            SubnetId: !Ref PublicSubnetTwo
-    PrivateRouteTableOne:
-        Type: AWS::EC2::RouteTable
-        Properties:
-            VpcId: !Ref 'VPC'
-    PrivateRouteOne:
-        Type: AWS::EC2::Route
-        Properties:
-            RouteTableId: !Ref PrivateRouteTableOne
-            DestinationCidrBlock: 0.0.0.0/0
-            NatGatewayId: !Ref NatGatewayOne
-    PrivateRouteTableOneAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            RouteTableId: !Ref PrivateRouteTableOne
-            SubnetId: !Ref PrivateSubnetOne
-    PrivateRouteTableTwo:
-        Type: AWS::EC2::RouteTable
-        Properties:
-            VpcId: !Ref 'VPC'
-    PrivateRouteTwo:
-        Type: AWS::EC2::Route
-        Properties:
-            RouteTableId: !Ref PrivateRouteTableTwo
-            DestinationCidrBlock: 0.0.0.0/0
-            NatGatewayId: !Ref NatGatewayTwo
-    PrivateRouteTableTwoAssociation:
-        Type: AWS::EC2::SubnetRouteTableAssociation
-        Properties:
-            RouteTableId: !Ref PrivateRouteTableTwo
-            SubnetId: !Ref PrivateSubnetTwo
-
-     # OPTIONAL: VPC Endpoint for DynamoDB
-  # If a container needs to access DynamoDB this allows a container in the private subnet
-  # to talk to DynamoDB directly without needing to go via the NAT gateway. This reduces
-  # the amount of bandwidth through the gateway, meaning that the gateway is free to serve
-  # your other traffic.
-    DynamoDBEndpoint:
-        Type: AWS::EC2::VPCEndpoint
-        Properties:
-            PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    - Effect: Allow
-                      Action: "*"
-                      Principal: "*"
-                      Resource: "*"
-            RouteTableIds:
-                - !Ref 'PrivateRouteTableOne'
-                - !Ref 'PrivateRouteTableTwo'
-            ServiceName: !Join [ "", [ "com.amazonaws.", { "Ref": "AWS::Region" }, ".dynamodb" ] ]
-            VpcId: !Ref 'VPC'
-
-    #Defining the lambda function for testing
-    CDDemoLambda:
-        Type: AWS::Serverless::Function
-        Properties:
-            Handler: lambdaFunction.lambda_handler
-            Runtime: python3.8
-            CodeUri: ./services
-            Description: 'Lambda function for CD Demo'
-            MemorySize: 128
-            Timeout: 30
-            Role: arn:aws:iam::386260696605:role/custom-lambda-role
-            Events:
-                getAZsAPI:
-                    Type: Api
-                    Properties:
-                        Path: /getazs
-                        Method: post
-            Environment:
-                Variables:
-                    REGION: ap-southeast-1
-    
     #search model lambda function
     ModelSearchLambda:
         Type: AWS::Serverless::Function
@@ -221,10 +13,8 @@ Resources:
             CodeUri: ./services
             Description: 'Lambda function for car model search'
             MemorySize: 128
-            Policies:
-                - AmazonDynamoDBFullAccess
-                - AWSLambdaVPCAccessExecutionRole
             Timeout: 30
+            Role: !GetAtt LambdaExecutionRole.Arn
             Events:
                 scanCarModelAPI:
                     Type: Api
@@ -234,8 +24,6 @@ Resources:
             Environment:
                 Variables:
                     REGION: ap-southeast-1
-
-    ##################################################################################################
     
     #retrieve price lambda function
     PriceRetrievalLambda:
@@ -247,7 +35,7 @@ Resources:
             Description: 'Lambda function for car price retrieve'
             MemorySize: 128
             Timeout: 30
-            Role: arn:aws:iam::386260696605:role/custom-lambda-role
+            Role: !GetAtt LambdaExecutionRole.Arn
             Events:
                 getCarPriceAPI:
                     Type: Api
@@ -268,7 +56,7 @@ Resources:
             Description: 'Lambda function for car options retrieve'
             MemorySize: 128
             Timeout: 30
-            Role: arn:aws:iam::386260696605:role/custom-lambda-role
+            Role: !GetAtt LambdaExecutionRole.Arn
             Events:
                 getCarOptionsAPI:
                     Type: Api
@@ -278,3 +66,19 @@ Resources:
             Environment:
                 Variables:
                     REGION: ap-southeast-1
+
+    #Role giving permission for the labdas to access resources
+    LambdaExecutionRole:
+        Description: Creating service role in IAM for AWS Lambda
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Statement:
+                - Effect: Allow
+                Principal:
+                    Service: [lambda.amazonaws.com]
+                Action: sts:AssumeRole
+            Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaFullAccess
+      Path: /               

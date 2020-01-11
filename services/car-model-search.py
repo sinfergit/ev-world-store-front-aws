@@ -10,7 +10,7 @@ table = ddb.Table('EvWorldCar')
 def lambda_handler(event, context):
     dataObject = json.loads(event['body'])
     response = table.scan(
-      FilterExpression = Attr('payload.model').contains(dataObject["model"])
+      FilterExpression = Attr('model').contains(dataObject["model"])
       )
     body = json.dumps(response['Items'], default=handle_decimal_type)
     

@@ -13,7 +13,7 @@ def lambda_handler(event, context):
       KeyConditionExpression=Key('id').eq(dataObject["id"])
       )
     
-    options = response['Items'][0]['payload']['options']
+    options = response['Items'][0]['options']
     body = json.dumps(options, default=handle_decimal_type)
     return {
         'statusCode': 200,

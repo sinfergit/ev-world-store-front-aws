@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     
     price = {
         "id": dataObject["id"],
-        "price": response['Items'][0]['payload']['price']
+        "price": response['Items'][0]['price']
     }
     body = json.dumps(price, default=handle_decimal_type)
     return {
