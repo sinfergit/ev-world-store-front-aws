@@ -69,15 +69,17 @@ Resources:
 
     #Role giving permission for the labdas to access resources
     LambdaExecutionRole:
-    Description: Creating service role in IAM for AWS Lambda
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [lambda.amazonaws.com]
-          Action: sts:AssumeRole
-      Path: /
+        Type: 'AWS::IAM::Role'
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                    Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                    Action:
+                        - 'sts:AssumeRole'
+            Path: /
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaFullAccess        
