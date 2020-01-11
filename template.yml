@@ -37,7 +37,7 @@ Resources:
                 - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
             Policies:
                 - PolicyName: LambdaDyanmoDBPolicy
-                PolicyDocument:
+                  PolicyDocument:
                     Version: 2012-10-17
                     Statement:
                         - Action:
