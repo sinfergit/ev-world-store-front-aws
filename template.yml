@@ -18,34 +18,34 @@ Resources:
              - 
                 AttributeName: id
                 KeyType: HASH
-        ProvisionedThroughput:
-            ReadCapacityUnits: 100
-            WriteCapacityUnits: 10 
+            ProvisionedThroughput:
+                ReadCapacityUnits: 100
+                WriteCapacityUnits: 10 
 
     LambdaExecutionRole:
         Description: Creating service role in IAM for AWS Lambda
         Type: AWS::IAM::Role
         Properties:
-        AssumeRolePolicyDocument:
-            Statement:
-            - Effect: Allow
-              Principal:
-                Service: [lambda.amazonaws.com]
-              Action: sts:AssumeRole
-        Path: /
-        ManagedPolicyArns:
-            - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        Policies:
-            - PolicyName: LambdaDyanmoDBPolicy
-            PolicyDocument:
-                Version: 2012-10-17
+            AssumeRolePolicyDocument:
                 Statement:
-                - Action:
-                    - "dynamodb:*"
-                    Resource: !GetAtt
-                     - DynamoDBTable
-                     - Arn
-                    Effect: Allow
+                - Effect: Allow
+                  Principal:
+                    Service: [lambda.amazonaws.com]
+                  Action: sts:AssumeRole
+            Path: /
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+            Policies:
+                - PolicyName: LambdaDyanmoDBPolicy
+                PolicyDocument:
+                    Version: 2012-10-17
+                    Statement:
+                        - Action:
+                            - "dynamodb:*"
+                          Resource: !GetAtt
+                            - DynamoDBTable
+                            - Arn
+                          Effect: Allow
                 
     #search model lambda function
     ModelSearchLambda:
