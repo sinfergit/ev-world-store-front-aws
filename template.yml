@@ -5,7 +5,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: CD Demo Lambda
 Resources:
 
-#Role giving permission for the labdas to access resources
+#Role giving permission for the labdas to access resources updated
     DynamoDBTable:
         Type: AWS::DynamoDB::Table
         Properties:
